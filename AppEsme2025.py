@@ -13,6 +13,11 @@ def process_excel(file):
         try:
             df = pd.read_excel(xls, sheet_name=sheet, skiprows=5, dtype=str)
             df["Price"] = pd.to_numeric(df.iloc[:, price_col].str.replace(",", ".", regex=False), errors='coerce').fillna(0)
+            
+            # Hvis fanen er "UPS DE", så sum også kolonne 17 (index 16)
+            if sheet == "UPS DE":
+                df["Price"] += pd.to_numeric(df.iloc[:, 16].str.replace(",", ".", regex=False), errors='coerce').fillna(0)
+            
             subtotal = df.groupby(df.iloc[:, 8])["Price"].sum().reset_index()
             subtotal.columns = ["Receiver Country", "Subtotal Price"]
             final_subtotals[sheet] = subtotal
