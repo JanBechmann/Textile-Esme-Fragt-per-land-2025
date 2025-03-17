@@ -1,6 +1,21 @@
 import streamlit as st
 import pandas as pd
 
+# Liste over EU-lande
+EU_COUNTRIES = {
+    "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT",
+    "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"
+}
+
+# Landekoder til landenavne (alle ISO-lande)
+COUNTRY_NAMES = {
+    "AT": "Austria", "BE": "Belgium", "BG": "Bulgaria", "HR": "Croatia", "CY": "Cyprus", "CZ": "Czech Republic",
+    "DK": "Denmark", "EE": "Estonia", "FI": "Finland", "FR": "France", "DE": "Germany", "GR": "Greece", "HU": "Hungary",
+    "IE": "Ireland", "IT": "Italy", "LV": "Latvia", "LT": "Lithuania", "LU": "Luxembourg", "MT": "Malta",
+    "NL": "Netherlands", "PL": "Poland", "PT": "Portugal", "RO": "Romania", "SK": "Slovakia", "SI": "Slovenia",
+    "ES": "Spain", "SE": "Sweden", "NO": "Norway", "GB": "United Kingdom", "CH": "Switzerland", "US": "United States"
+}
+
 # Funktion til at behandle Excel-data
 def process_excel(file):
     xls = pd.ExcelFile(file)
@@ -21,20 +36,38 @@ def process_excel(file):
             subtotal = df.groupby(df.iloc[:, 8])["Price"].sum().reset_index()
             subtotal.columns = ["Receiver Country", "Subtotal Price"]
             final_subtotals[sheet] = subtotal
-        except Exception as e:
+        except Exception:
             final_subtotals[sheet] = pd.DataFrame(columns=["Receiver Country", "Subtotal Price"])
     
     subtotal_combined = pd.concat(final_subtotals.values(), keys=final_subtotals.keys())
     total_per_country = subtotal_combined.groupby("Receiver Country")["Subtotal Price"].sum().reset_index()
+    
+    # Tilføj landenavn
+    total_per_country["Country Name"] = total_per_country["Receiver Country"].map(COUNTRY_NAMES)
+
+    # Opdel i "Med Moms" og "Uden Moms"
+    total_per_country["Med Moms"] = total_per_country.apply(
+        lambda row: row["Subtotal Price"] if row["Receiver Country"] in EU_COUNTRIES else 0, axis=1)
+    total_per_country["Uden Moms"] = total_per_country.apply(
+        lambda row: row["Subtotal Price"] if row["Receiver Country"] not in EU_COUNTRIES and row["Country Name"] else 0, axis=1)
+
+    # Beregn total og formater tal
     total_per_country["Subtotal Price"] = total_per_country["Subtotal Price"].round(2)
-    grand_total = total_per_country["Subtotal Price"].sum().round(2)
-    grand_total_row = pd.DataFrame([["GRAND TOTAL", grand_total]], columns=["Receiver Country", "Subtotal Price"])
-    final_totals = pd.concat([total_per_country, grand_total_row], ignore_index=True)
-    
+    total_per_country["Med Moms"] = total_per_country["Med Moms"].round(2)
+    total_per_country["Uden Moms"] = total_per_country["Uden Moms"].round(2)
+    total_per_country["Total"] = total_per_country["Subtotal Price"].round(2)
+
     # Fjern tomme rækker
-    final_totals = final_totals[final_totals["Receiver Country"].str.strip() != ""]
-    final_totals = final_totals[final_totals["Receiver Country"] != "Receiver Country"]
+    total_per_country = total_per_country[total_per_country["Receiver Country"].str.strip() != ""]
+    total_per_country = total_per_country[total_per_country["Receiver Country"] != "Receiver Country"]
+
+    # Beregn Grand Total
+    grand_total = total_per_country[["Subtotal Price", "Med Moms", "Uden Moms", "Total"]].sum().round(2)
+    grand_total_row = pd.DataFrame([["GRAND TOTAL", "", grand_total["Subtotal Price"], grand_total["Med Moms"], grand_total["Uden Moms"], grand_total["Total"]]],
+                                   columns=["Receiver Country", "Country Name", "Subtotal Price", "Med Moms", "Uden Moms", "Total"])
     
+    final_totals = pd.concat([total_per_country, grand_total_row], ignore_index=True)
+
     return final_totals
 
 # Streamlit UI
@@ -48,5 +81,5 @@ if uploaded_file:
     st.dataframe(result_df)
     
     # Download-knap
-    csv = result_df.to_csv(index=False).encode('utf-8')
+    csv = result_df.to_csv(index=False, decimal=',').encode('utf-8')
     st.download_button("Download resultater som CSV", csv, "fragt_data.csv", "text/csv")
