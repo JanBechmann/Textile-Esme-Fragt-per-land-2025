@@ -7,13 +7,14 @@ EU_COUNTRIES = {
     "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES", "SE"
 }
 
-# Landekoder til landenavne (alle ISO-lande)
+# Landekoder til landenavne (inkl. FO og IS)
 COUNTRY_NAMES = {
     "AT": "Austria", "BE": "Belgium", "BG": "Bulgaria", "HR": "Croatia", "CY": "Cyprus", "CZ": "Czech Republic",
     "DK": "Denmark", "EE": "Estonia", "FI": "Finland", "FR": "France", "DE": "Germany", "GR": "Greece", "HU": "Hungary",
     "IE": "Ireland", "IT": "Italy", "LV": "Latvia", "LT": "Lithuania", "LU": "Luxembourg", "MT": "Malta",
     "NL": "Netherlands", "PL": "Poland", "PT": "Portugal", "RO": "Romania", "SK": "Slovakia", "SI": "Slovenia",
-    "ES": "Spain", "SE": "Sweden", "NO": "Norway", "GB": "United Kingdom", "CH": "Switzerland", "US": "United States"
+    "ES": "Spain", "SE": "Sweden", "NO": "Norway", "GB": "United Kingdom", "CH": "Switzerland", "US": "United States",
+    "FO": "Faroe Islands", "IS": "Iceland"  # Tilføjet FO og IS
 }
 
 # Funktion til at behandle Excel-data
